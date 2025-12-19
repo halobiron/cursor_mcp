@@ -4,9 +4,9 @@ import tarfile
 import io
 import os
 import uuid
-from datetime import timedelta
 from minio import Minio
 from dotenv import load_dotenv
+import requests
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,7 +16,7 @@ mcp = FastMCP("Python Sandbox with Storage")
 client = docker.from_env()
 
 # Cấu hình MinIO từ environment variables
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "127.0.0.1:9000")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 MINIO_SECURE = os.getenv("MINIO_SECURE", "False").lower() == "true"
@@ -40,21 +40,29 @@ if not os.path.exists(HOST_WORKSPACE_DIR):
     os.makedirs(HOST_WORKSPACE_DIR)
 
 @mcp.tool()
-def execute_python_code(code: str) -> str:
+def execute_python_code(code: str, session_id: str = None) -> str:
     """
     Thực thi code Python. 
-    Các file cần lưu trữ hoặc đọc lại HÃY để trong thư mục '/app/data'.
-    Ví dụ: df.to_csv('/app/data/result.csv')
+    
+    QUAN TRỌNG: 
+    1. Để dùng chung dữ liệu giữa các lần gọi (ví dụ: đọc file đã tải), bạn PHẢI truyền cùng một 'session_id'.
+    2. Các file cần lưu trữ hoặc đọc lại HÃY để trong thư mục '/app/data'. Ví dụ: df.to_csv('/app/data/result.csv')
+    3. Nếu bạn chưa có 'session_id', hãy để trống ở lần gọi đầu tiên, hệ thống sẽ cấp cho bạn một ID.
+    
+    Args:
+        code: Code Python cần chạy.
+        session_id: ID của phiên làm việc (Session ID). Hãy tái sử dụng ID từ các lần gọi trước.
     """
     container = None
-    run_id = str(uuid.uuid4())[:8]
-    run_dir = os.path.join(HOST_WORKSPACE_DIR, run_id)
-    os.makedirs(run_dir, exist_ok=True)
+    if not session_id:
+        session_id = str(uuid.uuid4())[:8]
+    session_dir = os.path.join(HOST_WORKSPACE_DIR, session_id)
+    os.makedirs(session_dir, exist_ok=True)
 
     try:
         # Cấu hình Volume: Map thư mục riêng của lần chạy này vào container
         volume_config = {
-            run_dir: {'bind': '/app/data', 'mode': 'rw'}
+            session_dir: {'bind': '/app/data', 'mode': 'rw'}
         }
 
         # Chạy container với Volume được mount
@@ -85,10 +93,10 @@ def execute_python_code(code: str) -> str:
         
         # Upload các file sinh ra lên MinIO
         minio_paths = []
-        for filename in os.listdir(run_dir):
-            file_path = os.path.join(run_dir, filename)
-            if os.path.isfile(file_path):
-                object_name = f"{run_id}/{filename}"
+        for filename in os.listdir(session_dir):
+            file_path = os.path.join(session_dir, filename)
+            if os.path.isfile(file_path) and filename != "document":
+                object_name = f"{session_id}/{filename}"
                 MINIO_CLIENT.fput_object(BUCKET_NAME, object_name, file_path)
                 
                 # Tạo URL tải về (có hiệu lực trong 7 ngày)
@@ -96,12 +104,12 @@ def execute_python_code(code: str) -> str:
                     BUCKET_NAME, 
                     object_name
                 )
-                minio_paths.append(download_url)
+                minio_paths.append({"filename": filename, "url": download_url})
 
-        return f"Exit Code: {exit_code['StatusCode']}\nOutput:\n{logs}\n\nDownload Links: {minio_paths}"
+        return f"[Session ID: {session_id}]\nExit Code: {exit_code['StatusCode']}\nOutput:\n{logs}\n\nDownload Links: {minio_paths}"
 
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Error (Session ID: {session_id}): {str(e)}"
     
     finally:
         if container:
@@ -109,6 +117,39 @@ def execute_python_code(code: str) -> str:
                 container.remove(force=True)
             except:
                 pass
+
+@mcp.tool()
+def download_document(document_url: str, filename: str = "document", session_id: str = None) -> str:
+    """
+    Tải tài liệu từ link và lưu vào thư mục dữ liệu để xử lý sau.
+    
+    QUAN TRỌNG:
+    1. Tài liệu sẽ được lưu tại '/app/data/{filename}'.
+    2. Bạn PHẢI sử dụng 'session_id' được trả về trong các lần gọi 'execute_python_code' tiếp theo để truy cập file này.
+    
+    Args:
+        document_url: URL của tài liệu (CSV, TXT, JSON, Excel, v.v.)
+        filename: Tên file muốn lưu (mặc định là 'document').
+        session_id: (Tùy chọn) ID của phiên làm việc. Nếu có sẵn, hãy truyền vào để lưu chung chỗ.
+    """
+    if not session_id:
+        session_id = str(uuid.uuid4())[:8]
+    session_dir = os.path.join(HOST_WORKSPACE_DIR, session_id)
+    os.makedirs(session_dir, exist_ok=True)
+
+    try:
+        response = requests.get(document_url, timeout=30)
+        response.raise_for_status()
+        
+        # Lưu file
+        document_path = os.path.join(session_dir, filename)
+        with open(document_path, "wb") as f:
+            f.write(response.content)
+        
+        return f"Tải thành công! File đã lưu tại '/app/data/{filename}'.\n\nQUAN TRỌNG: Hãy sử dụng session_id='{session_id}' cho các lần gọi tiếp theo."
+
+    except Exception as e:
+        return f"Lỗi tải file (Session ID: {session_id}): {str(e)}"
 
 if __name__ == "__main__":
     mcp.run()

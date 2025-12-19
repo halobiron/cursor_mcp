@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "python-sandbox": {
+      "command": "python",
+      "args": ["E:\\Work\\PhenikaaX\\Cursor MCP\\python_sandbox.py"],
+      "cwd": "E:\\Work\\PhenikaaX\\Cursor MCP"
+    }
+  }
+}

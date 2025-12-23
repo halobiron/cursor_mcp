@@ -22,7 +22,7 @@ df['Thành tiền'] = df['Giá'] * df['Số lượng']
 print(df)
 df.to_csv('ban_hang.csv', index=False)
 """
-        result = await session.call_tool("execute_python_code", arguments={"code": code.strip()})
+        result = await session.call_tool("python_sandbox", arguments={"action": "execute", "code": code.strip()})
         print(*(c.text for c in result.content if hasattr(c, 'text')), sep="\n")
 
 if __name__ == "__main__":

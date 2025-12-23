@@ -3,7 +3,7 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Cài đặt các package cần thiết
-RUN pip install --no-cache-dir pandas numpy requests minio openpyxl
+RUN pip install --no-cache-dir pandas numpy requests minio openpyxl python-docx
 
 # Tạo thư mục data để mount volume
 RUN mkdir -p /app/data

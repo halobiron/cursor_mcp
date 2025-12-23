@@ -23,14 +23,16 @@ async def main():
     
     # 1. Test Document Download
     print("\n" + "="*60 + "\nTEST 1: DOWNLOAD CSV\n" + "="*60)
-    await run_mcp_tool("download_document", {
+    await run_mcp_tool("python_sandbox", {
+        "action": "download",
         "document_url": "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv",
         "session_id": shared_session_id
     })
 
     # 1b. Test Processing (Tạo file titanic_summary.csv)
     print("\n" + "="*60 + "\nTEST 1B: PROCESS & CREATE CSV\n" + "="*60)
-    await run_mcp_tool("execute_python_code", {
+    await run_mcp_tool("python_sandbox", {
+        "action": "execute",
         "code": """
 import pandas as pd
 df = pd.read_csv('/app/data/document')
@@ -57,7 +59,8 @@ if os.path.exists(file_path):
 else:
     print(f"File {file_path} not found!")
 """
-    await run_mcp_tool("execute_python_code", {
+    await run_mcp_tool("python_sandbox", {
+        "action": "execute",
         "code": edit_code.strip(),
         "session_id": shared_session_id
     })

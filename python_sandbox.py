@@ -53,17 +53,25 @@ def python_sandbox(
     SESSION_ID:
     - ALWAYS reuse the 'session_id' returned from previous calls to maintain data persistence 
       between downloading, reading, and editing.
+
+    FILENAME SELECTION:
+    - If 'filename' is provided: The tool will use that specific file (e.g., 'document.docx').
+    - If 'filename' is NOT provided: The tool automatically selects the LATEST edited version 
+      (e.g., 'document_edited.docx') to support iterative editing.
+    - IMPORTANT: To start a NEW edit from the ORIGINAL document after multiple previous edits, 
+      you MUST explicitly specify the original filename (e.g., 'document.docx'). Otherwise, 
+      it will keep editing the latest '_edited' version.
     """
     if action == "execute":
         return execute_python_code(code, session_id)
     elif action == "download":
         return download_document(document_url, filename or "document", session_id)
     elif action == "read_word":
-        return read_word_content(session_id)
+        return read_word_content(session_id, filename)
     elif action == "read_excel":
         return read_excel_content(session_id, filename, sheet_name, max_rows)
     elif action == "edit_word":
-        return edit_word_document(session_id, operations)
+        return edit_word_document(session_id, operations, filename)
     elif action == "edit_excel":
         return edit_excel_document(session_id, operations, filename, sheet_name)
     else:

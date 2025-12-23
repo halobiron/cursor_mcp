@@ -8,6 +8,24 @@ from .word_operations import (
 )
 
 
+# Common helper function code to be injected
+FIND_WORD_FILE_FUNC = '''
+def find_word_file(target_name=None):
+    files = os.listdir('/app/data')
+    if target_name:
+        if target_name in files: return target_name
+        if not target_name.endswith('.docx'):
+            if f"{target_name}.docx" in files: return f"{target_name}.docx"
+    
+    docx_files = [f for f in files if f.endswith('.docx')]
+    # Ưu tiên file đã sửa trước đó
+    edited_files = [f for f in docx_files if f.endswith('_edited.docx')]
+    if edited_files: return edited_files[0]
+    if docx_files: return docx_files[0]
+    return None
+'''
+
+
 def read_word_content(session_id: str, filename: str = None) -> str:
     """Read Word content.
     
@@ -22,19 +40,7 @@ def read_word_content(session_id: str, filename: str = None) -> str:
 from docx import Document
 import os
 
-def find_word_file(target_name=None):
-    files = os.listdir('/app/data')
-    if target_name:
-        if target_name in files: return target_name
-        if not target_name.endswith('.docx'):
-            if f"{{target_name}}.docx" in files: return f"{{target_name}}.docx"
-    
-    docx_files = [f for f in files if f.endswith('.docx')]
-    edited_files = [f for f in docx_files if f.endswith('_edited.docx')]
-    if edited_files: return edited_files[0]
-    if docx_files: return docx_files[0]
-    return None
-
+{FIND_WORD_FILE_FUNC}
 filename = find_word_file({repr(filename)})
 if not filename:
     print("Không tìm thấy file Word!")
@@ -100,19 +106,7 @@ import json
 from docx import Document
 import os
 
-def find_word_file(target_name=None):
-    files = os.listdir('/app/data')
-    if target_name:
-        if target_name in files: return target_name
-        if not target_name.endswith('.docx'):
-            if f"{{target_name}}.docx" in files: return f"{{target_name}}.docx"
-    
-    docx_files = [f for f in files if f.endswith('.docx')]
-    # Khi EDIT, ưu tiên file đã sửa trước đó để edit lặp lại
-    edited_files = [f for f in docx_files if f.endswith('_edited.docx')]
-    if edited_files: return edited_files[0]
-    if docx_files: return docx_files[0]
-    return None
+{FIND_WORD_FILE_FUNC}
 
 filename = find_word_file({repr(filename)})
 if not filename:

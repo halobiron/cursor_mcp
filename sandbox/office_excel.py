@@ -15,6 +15,25 @@ from .excel_operations import (
     create_summary_operation,
 )
 
+# Common helper function code to be injected
+FIND_EXCEL_FILE_FUNC = '''
+def find_excel_file(target_name=None):
+    files = os.listdir('/app/data')
+    if target_name:
+        if target_name in files: return target_name
+        for ext in ['.xlsx', '.xls']:
+            if f"{target_name}{ext}" in files: return f"{target_name}{ext}"
+    
+    excel_files = [f for f in files if f.endswith(('.xlsx', '.xls'))]
+    # Khi EDIT, ưu tiên file đã edit trước đó để có thể sửa tiếp (chaining)
+    # Nhưng nếu edit lần đầu thì lấy file gốc
+    edited_files = [f for f in excel_files if f.endswith('_edited.xlsx')]
+    if edited_files: return edited_files[0]
+    if excel_files: return excel_files[0]
+    return None
+'''
+
+
 def read_excel_content(session_id: str, filename: str = None, sheet_name: str = None, max_rows: int = 10) -> str:
     """Đọc nội dung Excel.
     
@@ -31,19 +50,7 @@ def read_excel_content(session_id: str, filename: str = None, sheet_name: str = 
 import pandas as pd
 import os
 
-def find_excel_file(target_name=None):
-    files = os.listdir('/app/data')
-    if target_name:
-        if target_name in files: return target_name
-        for ext in ['.xlsx', '.xls']:
-            if f"{{target_name}}{{ext}}" in files: return f"{{target_name}}{{ext}}"
-    
-    excel_files = [f for f in files if f.endswith(('.xlsx', '.xls'))]
-    edited_files = [f for f in excel_files if f.endswith('_edited.xlsx')]
-    if edited_files: return edited_files[0]
-    if excel_files: return excel_files[0]
-    if target_name and target_name in files: return target_name
-    return None
+{FIND_EXCEL_FILE_FUNC}
 
 filename = find_excel_file({repr(filename)})
 if not filename:
@@ -167,20 +174,7 @@ from openpyxl.styles import Font
 import os
 import json
 
-def find_excel_file(target_name=None):
-    files = os.listdir('/app/data')
-    if target_name:
-        if target_name in files: return target_name
-        for ext in ['.xlsx', '.xls']:
-            if f"{{target_name}}{{ext}}" in files: return f"{{target_name}}{{ext}}"
-    
-    excel_files = [f for f in files if f.endswith(('.xlsx', '.xls'))]
-    # Khi EDIT, ưu tiên file đã edit trước đó để có thể sửa tiếp (chaining)
-    # Nhưng nếu edit lần đầu thì lấy file gốc
-    edited_files = [f for f in excel_files if f.endswith('_edited.xlsx')]
-    if edited_files: return edited_files[0]
-    if excel_files: return excel_files[0]
-    return None
+{FIND_EXCEL_FILE_FUNC}
 
 filename = find_excel_file({repr(filename)})
 if not filename:

@@ -36,8 +36,11 @@ def python_sandbox(
     - 'read_word': Extracts text and table info from a Word file in the session.
     - 'read_excel': Reads an Excel file. Optional: 'sheet_name', 'max_rows' (default 10).
     - 'edit_word': Modifies a Word file. Requires 'operations' (list of dicts).
-        Ops: {"type": "replace", "old": "text", "new": "text"}, {"type": "insert_text", "text": "..."}, 
-             {"type": "insert_heading", "text": "...", "level": 1}, {"type": "delete_paragraph", "keyword": "..."},
+        Ops: {"type": "replace", "old": "text", "new": "text"}, 
+             {"type": "replace_paragraph", "index": 0, "new_text": "..."},
+             {"type": "insert_text", "text": "..."}, 
+             {"type": "insert_heading", "text": "...", "level": 1}, 
+             {"type": "delete_paragraph", "keyword": "..."},
              {"type": "custom_code", "code": "..."}
     - 'edit_excel': Modifies an Excel file. Requires 'operations' (list of dicts).
         Ops: {"type": "add_column", "name": "ColumnName", "formula": "ColA * ColB"}, 
@@ -58,11 +61,11 @@ def python_sandbox(
     elif action == "read_word":
         return read_word_content(session_id)
     elif action == "read_excel":
-        return read_excel_content(session_id, sheet_name, max_rows)
+        return read_excel_content(session_id, filename, sheet_name, max_rows)
     elif action == "edit_word":
         return edit_word_document(session_id, operations)
     elif action == "edit_excel":
-        return edit_excel_document(session_id, operations)
+        return edit_excel_document(session_id, operations, filename, sheet_name)
     else:
         return f"Lỗi: Action '{action}' không hợp lệ."
 

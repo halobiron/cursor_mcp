@@ -3,6 +3,7 @@ import os
 import sys
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+import uuid
 
 async def run_mcp_tool(action, arguments):
     """Helper function to run the python_sandbox tool with a specific action"""
@@ -25,7 +26,7 @@ async def run_mcp_tool(action, arguments):
         return output
 
 async def main():
-    session_id = "office_test_session_9988"
+    session_id = str(uuid.uuid4())[:8]
     word_url = "https://github.com/python-openxml/python-docx/raw/master/tests/test_files/test.docx"
     excel_url = "https://go.microsoft.com/fwlink/?LinkID=521962"
 

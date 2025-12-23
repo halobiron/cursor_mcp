@@ -28,6 +28,33 @@ for table in doc.tables:
             if old_text in cell.text:
                 cell.text = cell.text.replace(old_text, new_text)
                 count += 1
-print(f"- Đã thay thế '{{old_text}}' thành '{{new_text}}' tại {{count}} vị trí.")
+print(f"- Đã thay thế: '{{old_text}}' -> '{{new_text}}' (Tìm thấy: {{count}})")
+if count == 0:
+    print(f"  CẢNH BÁO: Không tìm thấy '{{old_text}}' để thay thế!")
+'''
+    return code
+
+
+def replace_paragraph_operation(op: dict) -> str:
+    """Tạo code để thay thế toàn bộ nội dung một paragraph theo index.
+    
+    Args:
+        op: Dictionary chứa 'index' và 'new_text'
+        
+    Returns:
+        Python code để thực hiện thay thế
+    """
+    index = op.get('index')
+    new_text = op.get('new_text')
+    
+    code = f'''
+# Replace paragraph by index operation
+index = {index}
+new_text = {repr(new_text)}
+if 0 <= index < len(doc.paragraphs):
+    doc.paragraphs[index].text = new_text
+    print(f"- Đã thay thế paragraph tại index {{index}}")
+else:
+    print(f"- Lỗi: Index paragraph {{index}} nằm ngoài phạm vi (0-{{len(doc.paragraphs)-1}})")
 '''
     return code

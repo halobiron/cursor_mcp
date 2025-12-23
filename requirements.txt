@@ -1,0 +1,10 @@
+mcp
+docker
+minio
+python-dotenv
+requests
+pandas
+numpy
+openpyxl
+python-docx
+

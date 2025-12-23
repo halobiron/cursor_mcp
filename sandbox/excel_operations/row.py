@@ -1,5 +1,3 @@
-"""Row operations for Excel documents."""
-
 from .formatting import get_copy_formatting_code
 
 

@@ -1,16 +1,8 @@
-"""Formatting utilities for Excel operations."""
-
-
 def get_copy_formatting_code() -> str:
-    """Trả về code Python để sao chép định dạng từ cell nguồn sang cell đích.
-    
-    Returns:
-        Python code dạng string để sao chép định dạng
-    """
+    """Trả về code Python để sao chép định dạng từ cell nguồn sang cell đích."""
     return '''
 def copy_cell_formatting(source_cell, target_cell):
-    """Sao chép định dạng từ source_cell sang target_cell một cách triệt để.
-    """
+    """Sao chép định dạng từ source_cell sang target_cell một cách triệt để."""
     from copy import copy
     
     if source_cell.has_style:
@@ -44,11 +36,7 @@ def copy_cell_formatting(source_cell, target_cell):
 '''
 
 def get_smart_format_code() -> str:
-    """Trả về code Python để tự động áp dụng định dạng số thông minh.
-    
-    Returns:
-        Python code dạng string
-    """
+    """Trả về code Python để tự động áp dụng định dạng số thông minh."""
     return '''
 def apply_smart_format(target_cell, value, col_name="", source_cell=None):
     """Áp dụng định dạng số cho cell. 

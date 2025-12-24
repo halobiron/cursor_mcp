@@ -60,7 +60,6 @@ def python_sandbox(
         Tip for 'custom_code': Use 'wb' (openpyxl workbook) and 'ws' (worksheet) for edits.
         Avoid 'ExcelWriter' or 'to_excel' as they lose formatting. Use 'ws.cell()' instead.
         Available helpers: 'copy_cell_formatting(src, dst)', 'apply_smart_format(cell, val)'.
-        The workbook is automatically saved to an '_edited.xlsx' file.
              
     SESSION_ID:
     - ALWAYS reuse the 'session_id' returned from previous calls to maintain data persistence 

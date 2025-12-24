@@ -32,7 +32,10 @@ def python_sandbox(
     3. Read and edit Word (.docx) and Excel (.xlsx) files using structured operations or custom code.
     
     ACTIONS:
-    - 'execute': Runs Python code. Requires 'code'. Use '/app/data' for file paths.
+    - 'execute': Runs Python code for general calculations or data processing. Requires 'code'. 
+      IMPORTANT: Avoid using 'execute' to modify Word or Excel files. 
+      Use 'edit_word' or 'edit_excel' with 'custom_code' instead to ensure proper file handling, 
+      formatting preservation, and consistent session persistence.
     - 'download': Downloads a file from 'document_url'. Optional: 'filename' (defaults to 'document').
     - 'read_word': Extracts text and table info from a Word file in the session.
     - 'read_excel': Reads an Excel file. Optional: 'sheet_name', 'max_rows' (default 10).
@@ -45,6 +48,8 @@ def python_sandbox(
              {"type": "insert_heading", "text": "...", "level": 1}, 
              {"type": "delete_paragraph", "keyword": "..."},
              {"type": "custom_code", "code": "..."}
+        Tip for 'custom_code': Use 'doc' (python-docx Document object) to modify content.
+        The file is automatically saved after all operations.
     - 'edit_excel': Modifies an Excel file. Requires 'operations' (list of dicts).
         Ops: {"type": "add_column", "name": "ColumnName", "formula": "ColA * ColB"}, 
              {"type": "filter", "column": "Col", "operator": ">", "value": 10},
@@ -52,6 +57,9 @@ def python_sandbox(
              {"type": "delete_rows", "column": "Status", "value": "Error"},
              {"type": "create_summary", "sheet_name": "Summary"},
              {"type": "custom_code", "code": "..."}
+        Tip for 'custom_code': Use 'wb' (openpyxl workbook) and 'ws' (worksheet) for edits.
+        Avoid 'ExcelWriter' or 'to_excel' as they lose formatting. Use 'ws.cell()' instead.
+        Available helpers: 'copy_cell_formatting(src, dst)', 'apply_smart_format(cell, val)'.
              
     SESSION_ID:
     - ALWAYS reuse the 'session_id' returned from previous calls to maintain data persistence 

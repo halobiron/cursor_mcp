@@ -1,14 +1,8 @@
-"""Filter operations for Excel documents."""
-
-
 def filter_operation(op: dict) -> str:
     """Tạo code để lọc dữ liệu trong Excel document.
     
     Args:
         op: Dictionary chứa 'column', 'operator', và 'value' để lọc
-        
-    Returns:
-        Python code để thực hiện lọc dữ liệu
     """
     col = op.get('column')
     op_sign = op.get('operator')
@@ -24,8 +18,12 @@ if op_sign == ">": df_filtered = df[df[col] > val]
 elif op_sign == "<": df_filtered = df[df[col] < val]
 elif op_sign == "==" or op_sign == "=": df_filtered = df[df[col] == val]
 
-new_sheet_name = f"Filtered_{{col}}"
-if new_sheet_name in wb.sheetnames: del wb[new_sheet_name]
+base_name = f"Filtered_{col}"
+new_sheet_name = base_name
+counter = 1
+while new_sheet_name in wb.sheetnames:
+    new_sheet_name = f"{base_name} ({counter})"
+    counter += 1
 ws_new = wb.create_sheet(new_sheet_name)
 
 # Ghi header

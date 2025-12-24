@@ -7,6 +7,7 @@ from .excel_operations import (
     delete_rows_operation,
     create_summary_operation,
 )
+from .excel_operations.formatting import get_copy_formatting_code, get_smart_format_code
 
 # Common helper function code to be injected
 FIND_EXCEL_FILE_FUNC = '''
@@ -106,12 +107,12 @@ def edit_excel_document(session_id: str, operations: list, filename: str = None,
     
     Args:
         session_id: ID of the session to execute code
-        operations: List of operations to perform
+        operations: List of operations to perform. For 'custom_code', avoid 'to_excel' or 'ExcelWriter' 
+                    to preserve formatting; use 'ws.cell()' and 'wb.save()' instead.
+                    Tip: Use 'copy_cell_formatting(src, dst)' or 'apply_smart_format(cell, val)' 
+                    to maintain consistency for new data.
         filename: Name of the file to edit (optional)
         sheet_name: Name of the sheet to edit (optional, default to first sheet)
-        
-    Returns:
-        Result of executing the operations
     """
     # Map operation types to their handler functions
     operation_handlers = {
@@ -165,6 +166,8 @@ import os
 import json
 
 {FIND_EXCEL_FILE_FUNC}
+{get_copy_formatting_code()}
+{get_smart_format_code()}
 
 filename = find_excel_file({repr(filename)})
 if not filename:

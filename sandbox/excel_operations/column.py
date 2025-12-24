@@ -1,5 +1,3 @@
-"""Column operations for Excel documents."""
-
 from .formatting import get_copy_formatting_code
 
 
@@ -8,9 +6,6 @@ def add_column_operation(op: dict) -> str:
     
     Args:
         op: Dictionary chứa 'name' và 'formula' của cột mới
-        
-    Returns:
-        Python code để thực hiện thêm cột với định dạng
     """
     col_name = op.get('name')
     formula = op.get('formula')
@@ -47,29 +42,23 @@ try:
                 # Nếu cột gốc là tiền tệ/số và chúng ta đang tính tỉ lệ (margin/ratio)
                 is_ratio = any(keyword in col_name.lower() for keyword in ['margin', 'ratio', 'rate', '%'])
                 
-                if is_ratio:
-                    new_cell.number_format = '0.00%'
-                elif source_cell.number_format and source_cell.number_format != 'General':
+                if source_cell.number_format and source_cell.number_format != 'General':
                     # Giữ nguyên định dạng từ cột nguồn nếu nó đặc biệt
                     new_cell.number_format = source_cell.number_format
+                elif is_ratio:
+                    new_cell.number_format = '0.00%'
                 else:
                     # Áp dụng định dạng số mặc định đẹp hơn
-                    if isinstance(val, float):
-                        if abs(val) < 1:
-                            new_cell.number_format = '0.00'
-                        else:
-                            new_cell.number_format = '#,##0.00'
-                    else:
-                        new_cell.number_format = '#,##0'
+                    new_cell.number_format = '#,##0.00'
     
     # Cập nhật AutoFilter để bao phủ cả cột mới
     from openpyxl.utils import get_column_letter
     full_range = f"A1:{{get_column_letter(new_col_idx)}}{{ws.max_row}}"
     ws.auto_filter.ref = full_range
         
-    print(f"- Đã thêm cột '{{col_name}}' bằng công thức '{{formula}}' với định dạng chuyên nghiệp và cập nhật bộ lọc")
+    print(f"- Added column '{{col_name}}' with formula '{{formula}}' with professional formatting and updated filter")
 except Exception as e:
-    print(f"- Lỗi thêm cột '{{col_name}}': {{e}}")
+    print(f"- Error adding column '{{col_name}}': {{e}}")
     import traceback
     traceback.print_exc()
 '''

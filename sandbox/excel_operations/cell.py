@@ -1,5 +1,3 @@
-"""Cell operations for Excel documents."""
-
 from .formatting import get_copy_formatting_code, get_smart_format_code
 
 
@@ -8,9 +6,6 @@ def update_cell_operation(op: dict) -> str:
     
     Args:
         op: Dictionary chứa 'row', 'column', và 'value'
-        
-    Returns:
-        Python code để thực hiện cập nhật cell
     """
     row = op.get('row')
     col_name = op.get('column')
@@ -53,8 +48,8 @@ if col_idx:
     # Tinh chỉnh định dạng số (Ưu tiên copy đơn vị từ source_cell)
     apply_smart_format(target_cell, value, col_name, source_cell)
 
-    print(f"- Đã cập nhật ô tại dòng {{row}}, cột {{col_name}} thành '{{value}}' với đơn vị được bảo toàn")
+    print(f"- Updated cell at row {{row}}, column {{col_name}} to '{{value}}' with unit preserved")
 else:
-    print(f"- Không tìm thấy cột '{{col_name}}' để cập nhật")
+    print(f"- Column '{{col_name}}' not found to update")
 '''
     return code

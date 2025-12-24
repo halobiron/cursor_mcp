@@ -7,9 +7,6 @@ def add_row_operation(op: dict) -> str:
     Args:
         op: Dictionary chứa 'data' (dict với key là tên cột và value là giá trị) 
             hoặc 'position' (vị trí chèn, mặc định là cuối)
-        
-    Returns:
-        Python code để thực hiện thêm row với định dạng
     """
     data = op.get('data', {})
     position = op.get('position', None)  # None = thêm vào cuối

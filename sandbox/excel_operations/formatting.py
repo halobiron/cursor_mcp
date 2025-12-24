@@ -46,6 +46,7 @@ def apply_smart_format(target_cell, value, col_name="", source_cell=None):
         return
         
     # 1. Ưu tiên cao nhất: Sao chép định dạng từ cell mẫu (source_cell)
+    # Bao gồm cả đơn vị tiền tệ, số thập phân, phần trăm...
     if source_cell and source_cell.number_format and source_cell.number_format != 'General':
         target_cell.number_format = source_cell.number_format
         return
@@ -54,18 +55,34 @@ def apply_smart_format(target_cell, value, col_name="", source_cell=None):
     if target_cell.number_format and target_cell.number_format != 'General':
         return
         
-    # 3. Fallback: Tự động nhận diện (nếu không có mẫu để copy)
+    # 3. Fallback: Tự động nhận diện dựa trên tên cột (Đặc biệt là đơn vị)
     col_name_lower = str(col_name).lower()
-    is_percentage = any(kw in col_name_lower for kw in ['%', 'ratio', 'rate', 'margin', 'tỉ lệ', 'phần trăm'])
     
+    # Kiểm tra phần trăm
+    is_percentage = any(kw in col_name_lower for kw in ['%', 'ratio', 'rate', 'margin', 'tỉ lệ', 'phần trăm', 'chiết khấu', 'discount'])
     if is_percentage:
         target_cell.number_format = '0.00%'
-    elif isinstance(value, float):
-        is_currency = any(kw in col_name_lower for kw in ['price', 'cost', 'amount', 'revenue', 'giá', 'tiền', 'lương', 'vốn'])
-        if is_currency or abs(value) >= 100:
-            target_cell.number_format = '#,##0.00'
+        return
+
+    # Kiểm tra tiền tệ / đơn vị
+    # VND
+    if any(kw in col_name_lower for kw in ['vnd', 'đồng', 'đ_']):
+        target_cell.number_format = '#,##0 "VND"'
+        return
+    # USD / Generic currency
+    is_currency = any(kw in col_name_lower for kw in ['price', 'cost', 'amount', 'revenue', 'giá', 'tiền', 'lương', 'vốn', 'thu nhập', 'budget', 'ngân sách', '$'])
+    
+    if is_currency:
+        if '$' in col_name_lower or 'usd' in col_name_lower:
+            target_cell.number_format = '"$"#,##0.00'
         else:
-            target_cell.number_format = '0.00'
+            # Mặc định cho số tiền lớn thường là phân cách hàng nghìn
+            target_cell.number_format = '#,##0.00'
+        return
+
+    # 4. Định dạng số thông thường dựa trên độ lớn
+    if isinstance(value, float):
+        target_cell.number_format = '#,##0.00'
     else:
         if abs(value) >= 1000:
             target_cell.number_format = '#,##0'

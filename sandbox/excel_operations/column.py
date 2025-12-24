@@ -1,4 +1,4 @@
-from .formatting import get_copy_formatting_code
+from .formatting import get_copy_formatting_code, get_smart_format_code
 
 
 def add_column_operation(op: dict) -> str:
@@ -13,6 +13,7 @@ def add_column_operation(op: dict) -> str:
     code = f'''
 # Add column operation with formatting
 {get_copy_formatting_code()}
+{get_smart_format_code()}
 
 col_name = {repr(col_name)}
 formula = {repr(formula)}
@@ -37,19 +38,8 @@ try:
             source_cell = ws.cell(row=i, column=source_col_idx)
             copy_cell_formatting(source_cell, new_cell)
             
-            # Tinh chỉnh định dạng số nếu cần
-            if isinstance(val, (int, float)):
-                # Nếu cột gốc là tiền tệ/số và chúng ta đang tính tỉ lệ (margin/ratio)
-                is_ratio = any(keyword in col_name.lower() for keyword in ['margin', 'ratio', 'rate', '%'])
-                
-                if source_cell.number_format and source_cell.number_format != 'General':
-                    # Giữ nguyên định dạng từ cột nguồn nếu nó đặc biệt
-                    new_cell.number_format = source_cell.number_format
-                elif is_ratio:
-                    new_cell.number_format = '0.00%'
-                else:
-                    # Áp dụng định dạng số mặc định đẹp hơn
-                    new_cell.number_format = '#,##0.00'
+            # Tinh chỉnh định dạng số và đơn vị (Tiền tệ, %, VND...)
+            apply_smart_format(new_cell, val, col_name, source_cell)
     
     # Cập nhật AutoFilter để bao phủ cả cột mới
     from openpyxl.utils import get_column_letter

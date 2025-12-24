@@ -1,4 +1,4 @@
-from .formatting import get_copy_formatting_code
+from .formatting import get_copy_formatting_code, get_smart_format_code
 
 
 def add_row_operation(op: dict) -> str:
@@ -14,6 +14,7 @@ def add_row_operation(op: dict) -> str:
     code = f'''
 # Add row operation with formatting
 {get_copy_formatting_code()}
+{get_smart_format_code()}
 
 data = {repr(data)}
 position = {repr(position)}
@@ -55,16 +56,8 @@ try:
         source_cell = ws.cell(row=source_row_idx if source_row_idx > 0 else 1, column=col_idx)
         copy_cell_formatting(source_cell, new_cell)
         
-        # Tinh chỉnh định dạng số nếu cần
-        if isinstance(value, (int, float)):
-            if new_cell.number_format == 'General' or not new_cell.number_format:
-                is_ratio = any(keyword in str(col_name).lower() for keyword in ['margin', 'ratio', 'rate', '%'])
-                if is_ratio:
-                    new_cell.number_format = '0.00%'
-                elif isinstance(value, float):
-                    new_cell.number_format = '#,##0.00' if abs(value) >= 1 else '0.00'
-                else:
-                    new_cell.number_format = '#,##0'
+        # Tinh chỉnh định dạng số và đơn vị (Tiền tệ, %, VND...)
+        apply_smart_format(new_cell, value, col_name, source_cell)
     
     # Cập nhật dataframe logic (optional for simple displays)
     print(f"- Đã thêm dòng mới tại vị trí {{new_row_idx}} với định dạng chuyên nghiệp")

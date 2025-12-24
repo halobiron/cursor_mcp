@@ -33,9 +33,8 @@ def python_sandbox(
     
     ACTIONS:
     - 'execute': Runs Python code for general calculations or data processing. Requires 'code'. 
-      IMPORTANT: Avoid using 'execute' to modify Word or Excel files. 
-      Use 'edit_word' or 'edit_excel' with 'custom_code' instead to ensure proper file handling, 
-      formatting preservation, and consistent session persistence.
+      ⚠️ CRITICAL: NEVER use 'execute' to modify Word or Excel files as it will DESTROY all original formatting, 
+      including colors, borders, formulas, and units. Use 'edit_word' or 'edit_excel' instead.
     - 'download': Downloads a file from 'document_url'. Optional: 'filename' (defaults to 'document').
     - 'read_word': Extracts text and table info from a Word file in the session.
     - 'read_excel': Reads an Excel file. Optional: 'sheet_name', 'max_rows' (default 10).
@@ -59,7 +58,10 @@ def python_sandbox(
              {"type": "custom_code", "code": "..."}
         Tip for 'custom_code': Use 'wb' (openpyxl workbook) and 'ws' (worksheet) for edits.
         Avoid 'ExcelWriter' or 'to_excel' as they lose formatting. Use 'ws.cell()' instead.
-        Available helpers: 'copy_cell_formatting(src, dst)', 'apply_smart_format(cell, val)'.
+        Available helpers (MUST CALL inside custom_code to keep units): 
+        - 'copy_cell_formatting(src, dst)': Copies all styles (font, borders, unit).
+        - 'apply_smart_format(cell, val, col_name, src=None)': Automatically adds units 
+          (VND, $, %) based on column name or source cell. Always call this for new data.
              
     SESSION_ID:
     - ALWAYS reuse the 'session_id' returned from previous calls to maintain data persistence 

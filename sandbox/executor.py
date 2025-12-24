@@ -24,7 +24,7 @@ def execute_python_code(code: str, session_id: str = None) -> str:
             command="python /app/main.py",
             detach=True,
             network_mode="none",
-            mem_limit="512m",
+            mem_limit="4g",
             volumes=volume_config, # <--- ĐIỂM QUAN TRỌNG NHẤT
             working_dir="/app/data",
             tty=True
@@ -41,7 +41,7 @@ def execute_python_code(code: str, session_id: str = None) -> str:
         container.put_archive("/app", tar_stream)
 
         # Chờ kết quả
-        exit_code = container.wait(timeout=30)
+        exit_code = container.wait(timeout=300)
         logs = container.logs().decode("utf-8")
         
         # Upload các file sinh ra lên MinIO

@@ -1,10 +1,3 @@
-"""Excel document operations module.
-
-This module provides functions to read and edit Excel documents using
-a modular approach with separate operation handlers.
-"""
-
-import json
 from .executor import execute_python_code
 from .excel_operations import (
     add_column_operation,
@@ -34,17 +27,12 @@ def find_excel_file(target_name=None):
 '''
 
 
-def read_excel_content(session_id: str, filename: str = None, sheet_name: str = None, max_rows: int = 10) -> str:
-    """Đọc nội dung Excel.
+def get_excel_sheets(session_id: str, filename: str = None) -> str:
+    """Liệt kê danh sách các sheet trong file Excel.
     
     Args:
         session_id: ID của session để thực thi code
         filename: Tên file cụ thể (tùy chọn)
-        sheet_name: Tên sheet cần đọc (None = đọc sheet đầu tiên)
-        max_rows: Số dòng tối đa hiển thị
-        
-    Returns:
-        Kết quả đọc nội dung Excel
     """
     code = f'''
 import pandas as pd
@@ -54,18 +42,59 @@ import os
 
 filename = find_excel_file({repr(filename)})
 if not filename:
-    print("Không tìm thấy file Excel!")
+    print("Can't find Excel file!")
     exit(1)
 
 try:
-    df = pd.read_excel(f'/app/data/{{filename}}', sheet_name={repr(sheet_name)})
+    xl = pd.ExcelFile(f'/app/data/{{filename}}')
+    print(f"Sheets in file '{{filename}}':")
+    for sheet in xl.sheet_names:
+        print(f"- {{sheet}}")
+except Exception as e:
+    if "not a zip file" in str(e).lower() or "BadZipFile" in str(type(e)):
+        print(f"Error: The file '{{filename}}' is corrupted or not a valid Excel (.xlsx) file.")
+        print("This often happens if a previous operation timed out while saving.")
+    else:
+        print(f"Error: {{e}}")
+    exit(1)
+'''
+    return execute_python_code(code, session_id)
+
+
+def read_excel_content(session_id: str, filename: str = None, sheet_name: str = None, max_rows: int = 10) -> str:
+    """Đọc nội dung Excel.
+    
+    Args:
+        session_id: ID của session để thực thi code
+        filename: Tên file cụ thể (tùy chọn)
+        sheet_name: Tên sheet cần đọc (Nên gọi get_excel_sheets trước để biết tên sheet)
+        max_rows: Số dòng tối đa hiển thị
+    """
+    code = f'''
+import pandas as pd
+import os
+
+{FIND_EXCEL_FILE_FUNC}
+
+filename = find_excel_file({repr(filename)})
+if not filename:
+    print("Can't find Excel file!")
+    exit(1)
+
+try:
+    # Preview: Only read first few rows to save memory/time
+    df = pd.read_excel(f'/app/data/{{filename}}', sheet_name={repr(sheet_name)}, nrows={max_rows})
     if isinstance(df, dict):
         first_sheet = list(df.keys())[0]
-        print(f"Báo cáo: File có nhiều sheet. Đang hiển thị sheet đầu tiên: '{{first_sheet}}'")
+        print(f"Report: File has multiple sheets. Displaying first sheet '{{first_sheet}}'")
         df = df[first_sheet]
-    print(df.head({max_rows}).to_string())
+    print(df.to_string())
 except Exception as e:
-    print(f"Lỗi: {{e}}")
+    if "not a zip file" in str(e).lower() or "BadZipFile" in str(type(e)):
+        print(f"Error: The file '{{filename}}' is corrupted or not a valid Excel (.xlsx) file.")
+        print("This often happens if the previous operation timed out while saving.")
+    else:
+        print(f"Error: {{e}}")
     exit(1)
 '''
     return execute_python_code(code, session_id)
@@ -103,58 +132,19 @@ def edit_excel_document(session_id: str, operations: list, filename: str = None,
             # Handle custom code directly
             custom_code = op.get('code')
             
-            # VALIDATION: Phát hiện pattern sai sẽ làm mất định dạng
-            dangerous_patterns = [
-                ('pd.ExcelWriter', 'Sử dụng pd.ExcelWriter sẽ GHI ĐÈ và MẤT TẤT CẢ ĐỊNH DẠNG!'),
-                ('ExcelWriter', 'Sử dụng ExcelWriter sẽ GHI ĐÈ và MẤT TẤT CẢ ĐỊNH DẠNG!'),
-                ('writer.book', 'Pattern writer.book không hoạt động và sẽ gây lỗi!'),
-                ('to_excel', 'Sử dụng df.to_excel() sẽ GHI ĐÈ và MẤT TẤT CẢ ĐỊNH DẠNG!'),
-            ]
+            # VALIDATION: Phát hiện pattern nguy hiểm làm mất định dạng
+            bad = {'ExcelWriter': 'LOST FORMAT', 'writer.book': 'CAUSE ERROR', 'to_excel': 'LOST FORMAT'}
+            warns = [f"{p}: {m}" for p, m in bad.items() if p in custom_code]
+            msg = f'print("⚠️ WARNING: " + {repr(", ".join(warns))} + "\\n💡 Use ws.cell() and wb.save() to keep format.")' if warns else ""
             
-            warnings = []
-            for pattern, msg in dangerous_patterns:
-                if pattern in custom_code:
-                    warnings.append(f"⚠️  CẢNH BÁO: {msg}")
-            
-            if warnings:
-                warning_msg = '\\n'.join(warnings)
-                operations_code.append(f'''
-# Custom code operation - VỚI CẢNH BÁO
-print("=" * 80)
-print("⚠️  PHÁT HIỆN CODE NGUY HIỂM - CÓ THỂ LÀM MẤT ĐỊNH DẠNG!")
-print("=" * 80)
-print({repr(warning_msg)})
-print()
-print("ĐỂ GIỮ ĐỊNH DẠNG, CHỈ NÊN:")
-print("  ✅ Sử dụng ws.cell() để thêm/sửa cell")
-print("  ✅ Sử dụng wb.save() để lưu file")
-print("  ❌ KHÔNG dùng pd.ExcelWriter hoặc df.to_excel()")
-print()
-print("Xem file EXCEL_FORMATTING_GUIDE.md để biết thêm chi tiết.")
-print("=" * 80)
-print()
-
-custom_code = {repr(custom_code)}
-try:
-    exec(custom_code, globals())
-    print(f"- Đã thực thi custom code (có cảnh báo).")
-except Exception as e:
-    print(f"- Lỗi thực thi custom code: {{e}}")
-    import traceback
-    traceback.print_exc()
-    print()
-    print("💡 GỢI Ý: Nếu lỗi liên quan đến 'writer.book' hoặc 'ExcelWriter',")
-    print("   hãy xóa code đó và chỉ dùng wb.save() để lưu file.")
-''')
-            else:
-                operations_code.append(f'''
+            operations_code.append(f'''
 # Custom code operation
-custom_code = {repr(custom_code)}
+{msg}
 try:
-    exec(custom_code, globals())
-    print(f"- Đã thực thi custom code thành công.")
+    exec({repr(custom_code)}, globals())
+    print("- Done custom code.")
 except Exception as e:
-    print(f"- Lỗi thực thi custom code: {{e}}")
+    print(f"- Error: {{e}}")
     import traceback
     traceback.print_exc()
 ''')
@@ -163,7 +153,7 @@ except Exception as e:
             operations_code.append(operation_handlers[op_type](op))
         else:
             operations_code.append(f'''
-print(f"- Cảnh báo: Operation type '{op_type}' không được hỗ trợ")
+print(f"- Warning: Operation type '{op_type}' is not supported")
 ''')
     
     # Combine all operations into final code
@@ -178,20 +168,25 @@ import json
 
 filename = find_excel_file({repr(filename)})
 if not filename:
-    print("Lỗi: Không tìm thấy file Excel nào để chỉnh sửa!")
+    print("Error: File Excel not found!")
     exit(1)
 
 file_path = f'/app/data/{{filename}}'
-print(f"Đang xử lý file: {{filename}}")
+print(f"Processing file: {{filename}}")
 
-# Đọc file Excel với tất cả định dạng
-# data_only=False: giữ công thức thay vì chỉ giá trị
-# keep_vba=True: giữ macro VBA nếu có
+# Read Excel file with all formats
+# data_only=False: keep formulas instead of values
+# keep_vba=True: keep VBA macros if any
 try:
     wb = openpyxl.load_workbook(file_path, data_only=False, keep_vba=True)
 except Exception as e:
-    # Nếu không thể load bằng openpyxl (có thể là .xls cũ), fallback sang thông báo lỗi cụ thể
-    print(f"Lỗi: Không thể mở file bằng engine openpyxl (có thể file là định dạng .xls cũ hoặc bị lỗi). {{e}}")
+    # If can't open using openpyxl (maybe .xls or corrupted)
+    if "not a zip file" in str(e).lower() or "BadZipFile" in str(type(e)):
+        print(f"Error: The file '{filename}' is corrupted or not a valid Excel (.xlsx) file.")
+        print("This often happens if a previous operation timed out while saving.")
+        print("Tip: You can try downloading the original file again to start fresh.")
+    else:
+        print(f"Error: Can't open file using openpyxl engine. {{e}}")
     exit(1)
 
 target_sheet = {repr(sheet_name)}
@@ -201,17 +196,17 @@ else:
     target_sheet = wb.sheetnames[0]
     ws = wb[target_sheet]
 
-print(f"Đang làm việc trên sheet: {{target_sheet}}")
+print(f"Processing sheet: {{target_sheet}}")
 
-# Đọc bằng pandas để xử lý dữ liệu dễ hơn
+# Read using pandas for easier data processing
 df = pd.read_excel(file_path, sheet_name=target_sheet)
 df.columns = [c.strip() for c in df.columns]
 
 {chr(10).join(operations_code)}
 
-# Lưu file đã chỉnh sửa với tất cả định dạng
+# Save edited file with all formats
 base, ext = os.path.splitext(filename)
-# Đảm bảo ext luôn là .xlsx nếu file gốc không có ext hoặc là .xls (chuyển đổi sang .xlsx)
+# Ensure ext is always .xlsx if file origin doesn't have ext or is .xls (convert to .xlsx)
 if not ext or ext.lower() == '.xls':
     ext = '.xlsx'
 
@@ -222,21 +217,21 @@ else:
 
 save_path = f'/app/data/{{output_filename}}'
 
-# Đảm bảo workbook properties được giữ nguyên
-# Điều này giúp giữ các metadata như author, created date, etc.
+# Ensure workbook properties are kept
+# This helps keep metadata like author, created date, etc.
 try:
-    # Save với tất cả các tùy chọn để giữ định dạng
+    # Save with all options to keep format
     wb.save(save_path)
-    print(f"\\nĐã lưu file chỉnh sửa: {{output_filename}}")
-    print("Tất cả định dạng gốc đã được giữ nguyên.")
+    print(f"\\nDone saving edited file: {{output_filename}}")
+    print("All original formats have been kept.")
 except Exception as e:
-    print(f"Lỗi khi lưu file: {{e}}")
-    # Thử lưu với cách khác nếu có lỗi
+    print(f"Error when saving file: {{e}}")
+    # Try saving with another way if error
     try:
         wb.save(save_path)
-        print(f"\\nĐã lưu file (fallback): {{output_filename}}")
+        print(f"\\nDone saving file (fallback): {{output_filename}}")
     except Exception as e2:
-        print(f"Không thể lưu file: {{e2}}")
+        print(f"Can't save file: {{e2}}")
         exit(1)
 '''
     return execute_python_code(code, session_id)

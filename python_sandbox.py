@@ -5,7 +5,8 @@ from sandbox import (
     read_word_content,
     edit_word_document,
     read_excel_content,
-    edit_excel_document
+    edit_excel_document,
+    get_excel_sheets
 )
 
 # Khởi tạo MCP Server
@@ -35,6 +36,8 @@ def python_sandbox(
     - 'download': Downloads a file from 'document_url'. Optional: 'filename' (defaults to 'document').
     - 'read_word': Extracts text and table info from a Word file in the session.
     - 'read_excel': Reads an Excel file. Optional: 'sheet_name', 'max_rows' (default 10).
+      Tip: Call 'list_sheets' first to see available sheet names.
+    - 'list_sheets': Lists all sheet names in an Excel file.
     - 'edit_word': Modifies a Word file. Requires 'operations' (list of dicts).
         Ops: {"type": "replace", "old": "text", "new": "text"}, 
              {"type": "replace_paragraph", "index": 0, "new_text": "..."},
@@ -70,6 +73,8 @@ def python_sandbox(
         return read_word_content(session_id, filename)
     elif action == "read_excel":
         return read_excel_content(session_id, filename, sheet_name, max_rows)
+    elif action == "list_sheets":
+        return get_excel_sheets(session_id, filename)
     elif action == "edit_word":
         return edit_word_document(session_id, operations, filename)
     elif action == "edit_excel":
